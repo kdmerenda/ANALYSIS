@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<!-- Configuration of Module EventFileReader -->
+
+<EventFileReader
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation='/home/kswiss/Workspace/offline/install/share/auger-offline/config/EventFileReader.xsd'>
+
+  <ReportFilenames/>
+
+  <!-- file types: Offline
+                   FDAS
+                   CDAS
+                   CORSIKA
+                   AIRES   
+                   IoAuger  -->
+
+  <FDAS>
+
+    <InputFilenames> 
+      /home/kswiss/Workspace/workoffline/CompStudy/saved/170509/FdSimOut.eye4.3.root
+    </InputFilenames>
+    <!--InputFilenames>
+      /media/kswiss/ExtraDrive1/ELVESRawData/elves_e4_006402_2016-09-30.08-13.root
+    </InputFilenames-->
+
+  </FDAS>
+
+</EventFileReader>

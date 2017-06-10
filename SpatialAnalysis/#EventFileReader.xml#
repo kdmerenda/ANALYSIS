@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<!-- Configuration of Module EventFileReader -->
+
+<EventFileReader
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation='/home/kswiss/Workspace/offline/install/share/auger-offline/config/EventFileReader.xsd'>
+
+  <ReportFilenames/>
+
+  <!-- file types: Offline
+                   FDAS
+                   CDAS
+                   CORSIKA
+                   AIRES   
+                   IoAuger  -->
+
+  <FDAS>
+
+    <InputFilenames> 
+
+<!--      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-61.5.eye3.root-->
+      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-62.0.eye3.root
+      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-62.5.eye3.root
+      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-63.0.eye3.root
+      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-63.5.eye3.root
+      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-64.0.eye3.root
+      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-64.5.eye3.root
+      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-65.0.eye3.root
+      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-65.5.eye3.root
+      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-66.0.eye3.root
+      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-66.5.eye3.root
+      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-67.0.eye3.root
+
+    </InputFilenames>
+
+  </FDAS>
+
+</EventFileReader>

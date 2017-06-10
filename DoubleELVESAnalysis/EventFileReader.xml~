@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<!-- Configuration of Module EventFileReader -->
+
+<EventFileReader
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation='/home/kswiss/Workspace/offline/install/share/auger-offline/config/EventFileReader.xsd'>
+
+  <ReportFilenames/>
+
+  <!-- file types: Offline
+                   FDAS
+                   CDAS
+                   CORSIKA
+                   AIRES   
+                   IoAuger  -->
+
+  <FDAS>
+
+    <InputFilenames>
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004571_2013-03-07.00-52.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004576_2013-03-09.01-00.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004577_2013-03-10.00-46.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004579_2013-03-12.00-27.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004581_2013-03-12.01-51.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004582_2013-03-13.00-18.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004583_2013-03-15.00-33.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004597_2013-03-21.04-48.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004615_2013-04-11.08-26.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004616_2013-04-12.00-23.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004694_2013-06-08.23-14.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004695_2013-06-09.08-02.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004704_2013-06-14.01-01.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004755_2013-07-30.23-41.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004820_2013-09-07.06-29.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004839_2013-10-03.00-06.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004845_2013-10-07.23-54.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004846_2013-10-09.01-23.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004847_2013-10-09.04-01.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004848_2013-10-09.07-02.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004855_2013-10-26.00-33.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004860_2013-10-29.00-38.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004863_2013-10-31.03-26.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004867_2013-11-01.01-31.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004880_2013-11-08.03-30.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004886_2013-11-27.01-17.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004898_2013-12-01.01-22.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004899_2013-12-01.03-53.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004900_2013-12-01.04-23.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004901_2013-12-01.05-32.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004912_2013-12-08.01-44.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004914_2013-12-27.02-06.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004917_2013-12-29.01-41.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004918_2013-12-30.01-42.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_004919_2013-12-31.01-42.root
+    </InputFilenames>
+
+  </FDAS>
+
+</EventFileReader>

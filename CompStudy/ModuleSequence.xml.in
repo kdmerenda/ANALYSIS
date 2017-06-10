@@ -1,0 +1,30 @@
+<!-- A sequence for an FD only reconstruction -->
+
+<sequenceFile
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation='@SCHEMALOCATION@/ModuleSequence.xsd'>
+
+  <enableTiming/>
+
+  <moduleControl>
+
+    <loop numTimes="unbounded" pushEventToStack="yes">
+
+      <module> EventFileReaderOG         </module>
+      <module> EventCheckerOG            </module>
+
+      <module> FdCalibratorOG            </module>
+      <module> FdPulseFinderOG           </module>
+      <module> PixelSelectorOG           </module>
+      <module> FdSDPFinderOG             </module>
+      <module> FdAxisFinderOG            </module>
+      <module> FdApertureLightOG         </module>
+      <module> FdProfileReconstructorKG  </module>
+
+      <module> RecDataWriterNG </module>
+
+    </loop>
+
+  </moduleControl>
+
+</sequenceFile>

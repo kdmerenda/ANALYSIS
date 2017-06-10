@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<!-- Configuration of Module EventFileReader -->
+
+<EventFileReader
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation='/home/kswiss/Workspace/offline/install/share/auger-offline/config/EventFileReader.xsd'>
+
+  <ReportFilenames/>
+
+  <!-- file types: Offline
+                   FDAS
+                   CDAS
+                   CORSIKA
+                   AIRES   
+                   IoAuger  -->
+
+  <FDAS>
+
+    <InputFilenames> 
+      /home/kswiss/Workspace/workoffline/CompStudy/saved/170526/FdSimOut.sourcealt_2.5e03.eye1.root
+      /home/kswiss/Workspace/workoffline/CompStudy/saved/170526/FdSimOut.sourcealt_3e03.eye1.root
+      /home/kswiss/Workspace/workoffline/CompStudy/saved/170526/FdSimOut.sourcealt_3.5e03.eye1.root
+      /home/kswiss/Workspace/workoffline/CompStudy/saved/170526/FdSimOut.sourcealt_4e03.eye1.root
+      /home/kswiss/Workspace/workoffline/CompStudy/saved/170526/FdSimOut.sourcealt_4.5e03.eye1.root
+      /home/kswiss/Workspace/workoffline/CompStudy/saved/170526/FdSimOut.sourcealt_5e03.eye1.root
+      /home/kswiss/Workspace/workoffline/CompStudy/saved/170526/FdSimOut.sourcealt_5.5e03.eye1.root
+      /home/kswiss/Workspace/workoffline/CompStudy/saved/170526/FdSimOut.sourcealt_6e03.eye1.root
+      /home/kswiss/Workspace/workoffline/CompStudy/saved/170526/FdSimOut.sourcealt_6.5e03.eye1.root
+      /home/kswiss/Workspace/workoffline/CompStudy/saved/170526/FdSimOut.sourcealt_7e03.eye1.root
+      /home/kswiss/Workspace/workoffline/CompStudy/saved/170526/FdSimOut.sourcealt_7.5e03.eye1.root
+      /home/kswiss/Workspace/workoffline/CompStudy/saved/170526/FdSimOut.sourcealt_8e03.eye1.root
+
+      /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_005254_2014-09-30.01-38.root
+    </InputFilenames>
+
+  </FDAS>
+
+</EventFileReader>

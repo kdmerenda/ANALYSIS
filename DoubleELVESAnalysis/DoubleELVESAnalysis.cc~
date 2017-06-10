@@ -1,0 +1,303 @@
+#include "DoubleELVESAnalysis.h"
+#include <evt/Event.h>
+#include <fevt/FEvent.h>
+#include <fevt/Eye.h>
+#include <fevt/TelescopeSimData.h>
+#include <fevt/Telescope.h>
+#include <fevt/PixelSimData.h>
+#include <fevt/Pixel.h>
+#include <fevt/FdConstants.h>
+#include <det/Detector.h>
+#include <fdet/FDetector.h>
+#include <fdet/Eye.h>
+#include <fdet/Telescope.h>
+#include <fdet/Camera.h>
+#include <fdet/Pixel.h>
+#include <fdet/Channel.h>
+#include <fdet/Mirror.h>
+#include <fdet/Filter.h>
+#include <fdet/Corrector.h>
+
+#include <utl/Point.h>
+#include <utl/UTMPoint.h>
+#include <utl/Particle.h>
+#include <utl/Vector.h>
+#include <utl/TimeStamp.h>
+#include <utl/Particle.h>
+#include <utl/ErrorLogger.h>
+#include <utl/ReferenceEllipsoid.h>
+#include <utl/RandomEngine.h>
+#include <fwk/LocalCoordinateSystem.h>
+#include <fwk/CoordinateSystemRegistry.h>
+#include <fwk/CentralConfig.h>
+#include <fwk/SVNGlobalRevision.h>
+#include <fwk/RandomEngineRegistry.h>
+#include <utl/Math.h>
+
+#include <utl/MathConstants.h>
+#include <utl/CoordinateSystemPtr.h>
+#include <utl/AxialVector.h>
+#include <utl/Vector.h>
+#include <utl/PhysicalConstants.h>
+#include <utl/AugerUnits.h>
+
+#include <CLHEP/Random/Randomize.h>
+
+#include <TMap.h>
+#include <TTree.h>
+#include <TGraph.h>
+#include <TCanvas.h>
+#include <TCutG.h>
+#include <TH2D.h>
+#include <THStack.h>
+#include <TLegend.h>
+#include <TStyle.h>
+#include <TLatex.h>
+#include <TH1D.h>
+#include <TF1.h>
+#include <TFile.h>
+#include <TVector3.h>
+#include <vector>
+#include <AugerEvent.h>
+#include <EyeEvent.hh>
+#include <EyePixelList.hh>
+#include <FadcData.hh>
+
+using namespace std;
+using namespace utl;
+using namespace fwk;
+using namespace evt;
+using namespace fevt;
+using namespace fdet;
+using namespace det;
+using CLHEP::RandFlat;
+
+namespace DoubleELVESAnalysis {
+
+// Initialize your static data members.
+
+// Define the methods preferibly in the same order as listed in the header file.
+
+DoubleELVESAnalysis::DoubleELVESAnalysis() 
+{
+  // Initialize your class.
+  // Prefer initialization lists over = to 
+  // initialize your members.
+}
+
+DoubleELVESAnalysis::~DoubleELVESAnalysis()
+{
+}
+
+VModule::ResultFlag 
+DoubleELVESAnalysis::Init()
+{
+  INFO("=====================>>>>>>>>>>>>>>>> Init!");
+  hdeltaTMedian = new TH1F("deltaTMedian","Median Difference; time bin (100ns); counts", 50, 200, 700);
+  hdeltaTMean = new TH1F("deltaTMean","Mean Time Difference; time bin (100ns); counts", 50, 200, 700);
+  return eSuccess;
+}
+
+VModule::ResultFlag 
+DoubleELVESAnalysis::Run(evt::Event& event)
+{
+
+  AugerEvent& rawEvent = event.GetRawEvent();
+  INFO("New Raw Event!");
+  
+  for (AugerEvent::EyeIterator eyeIter = rawEvent.EyesBegin();
+       eyeIter != rawEvent.EyesEnd(); ++eyeIter) {
+    
+    TEyeEvent& eyeEvent = *eyeIter;
+    TEyePixelList* eyePixelList = eyeEvent.GetPixelList();
+    TEyeFADCData* eyeFADCData = eyeEvent.GetFADCData();
+    const unsigned int numpixels = eyePixelList->GetNumPixels();
+    TEyeEventHeader *eyeHeader = eyeEvent.GetEventHeader();
+    const int eyeId = eyeEvent.GetEventHeader()->GetEyeNo();
+    const fdet::FDetector& detFD = det::Detector::GetInstance().GetFDetector();
+    FEvent& fdEvent = event.GetFEvent();
+    fevt::Eye& eye = fdEvent.GetEye(eyeId);
+
+
+    cout << eyeEvent.GetEventHeader()->GetEventNo() << " " << eyePixelList->GetNumPixels() << " " <<  eyePixelList->GetEyeNo() << endl;
+
+    //only look at first page.
+    for (int pageNum = 1; pageNum < 9; pageNum++){
+      if ( eyeEvent.GetEventHeader()->GetEventNo() == fEventCounter+pageNum) return eSuccess;
+    } fEventCounter = eyeEvent.GetEventHeader()->GetEventNo();
+
+    
+    TString fName("/home/kswiss/Workspace/workoffline/DoubleELVESAnalysis/traces/");
+    fName+="run";
+    fName+=eyeEvent.GetEventHeader()->GetRunNo();
+    fName+=".event";
+    fName+=eyeEvent.GetEventHeader()->GetEventNo();
+    fName+=".eye";
+    fName+=eyeId;
+    fName+=".root";
+    TFile fTMP(fName,"recreate");
+
+    
+    int doubleELVESPixelCounter = 0;
+    vector<double> timeDifference;
+    for (unsigned int iPixel = 0; iPixel < eyePixelList->GetNumPixels(); ++iPixel) {
+      
+      FdUtil::Fd::FdPixelNumber pixelNumber = eyePixelList->GetPixel(iPixel);
+      const unsigned int mirrorId = FdUtil::Fd::GetEyeMirrorNo(pixelNumber);
+      const unsigned int channelId = FdUtil::Fd::GetMirrorPixelNo(pixelNumber);
+      //     const unsigned int pixelId = FdUtil::Fd::GetPixelNo(pixelNumber);
+      
+      const TFADCData* fadcData = eyeFADCData->GetFADCData(pixelNumber);
+
+      fevt::Telescope& tel = eye.GetTelescope(mirrorId);
+      const fdet::FDetector& detFD = det::Detector::GetInstance().GetFDetector();
+      const fdet::Eye& detEye = detFD.GetEye(eyeId);
+      //cout << " detEye " << eyeId<<endl;
+      const fdet::Telescope& detTel = detEye.GetTelescope(mirrorId);
+      
+      const fdet::Channel& thisChannel = detTel.GetChannel(channelId);
+      const unsigned int pixelId = thisChannel.GetPixelId();
+
+
+      if (!fadcData || thisChannel.IsVirtual()) {
+	continue;
+      }
+      //  cout << mirrorId << " " << channelId << " " << pixelId << endl;
+      
+      
+      const unsigned int startBin = fadcData->GetTraceStartBin();
+      const unsigned int endBin = fadcData->GetTraceEndBin();
+      
+      TFADCData::FADCDataWord fadcword = fadcData->GetFADCTrace();
+      
+      double baseline = 0.;
+      double baselineRMS = 0.;
+      double charge=0.;
+            
+             
+      // PEDESTAL CALCULATION : the first 280 bins
+      for (unsigned int pos = startBin; pos <startBin+280; ++pos) baseline += int(FADCDataWordGetData(&fadcword[pos]))/280.;
+      
+      for (unsigned int pos = startBin; pos <startBin+280; ++pos) baselineRMS += pow(int(FADCDataWordGetData(&fadcword[pos])),2)/280.;
+      
+      baselineRMS -= pow(baseline,2);
+      if (baselineRMS>0) baselineRMS=sqrt(baselineRMS);
+      else baselineRMS=0.;
+
+      TString hName("h"); hName+=fEventCounter;hName+="_m";hName+=mirrorId;hName+="_r";hName+=detTel.GetPixel(pixelId).GetRow();hName+="_c";hName+=detTel.GetPixel(pixelId).GetColumn();
+      TH1F* trace = new TH1F(hName,hName,500,startBin,endBin);
+
+      for (unsigned int pos = startBin; pos <= endBin; ++pos) {
+	charge = FADCDataWordGetData(&fadcword[pos]);
+       	if (pixelId <= 440) trace->Fill(pos,charge-baseline);
+      }
+
+      if(trace->GetMaximum() < 50) {
+       	delete trace;
+       	continue;
+      }
+
+
+      Double_t par[6];
+      // TF1 p1("p1","pol1",0,200);
+      TF1 g1("g1","gaus",200,600);
+      TF1 g2("g2","gaus",600,1000);
+      //      TF1 total("total","gaus(0)+gaus(3)",200,1000);
+      // p1.SetLineColor(kBlack);
+      g1.SetLineColor(kRed);
+      g2.SetLineColor(kBlue);
+      // trace->Fit(&p1,"R");
+      trace->Fit(&g1,"R");
+      trace->Fit(&g2,"R+");
+      // g1.GetParameters(&par[0]);
+      // g2.GetParameters(&par[3]);
+      //      total.SetParameters(par);
+      //      trace->Fit(&total,"R+");
+      
+      //normalize      
+      if(
+	 //Difference between the mean of the gaussian (dt)
+	 TMath::Abs( g1.GetParameter(1) - g2.GetParameter(1)) < 150 ||
+	 //Amplitude of the fit at the mean
+	 g1.Eval(g1.GetParameter(1)) < 50 || g2.Eval(g2.GetParameter(1)) < 50 ||
+	 //The difference in amplitudes at the mean
+	 TMath::Abs(g1.Eval(g1.GetParameter(1)) - g2.Eval(g2.GetParameter(1))) > 100 ||
+	 //The quality of the fits
+	 g2.GetChisquare()/g2.GetNDF() > 10 || g1.GetChisquare()/g1.GetNDF() > 10 ||
+	 //The standard deviation of the fits (width of peaks)
+	 g1.GetParameter(2) > 200 || g2.GetParameter(2) > 200)
+	{
+
+	  delete trace;
+	  continue;
+	}
+      
+      doubleELVESPixelCounter++;
+      timeDifference.push_back(TMath::Abs(g1.GetParameter(1) - g2.GetParameter(1)));
+      //||
+      //	 p1.GetChisquare()/p1.GetNDF() > 2 )
+      // Double_t par[6];
+      // TF1 *g1    = new TF1("g1","gaus",200,600);
+      // TF1 *g2    = new TF1("g2","gaus",600,1000);
+      // TF1 *total = new TF1("total","gaus(0)+gaus(3)",200,1000);
+      // total->SetLineColor(2);
+      // trace->Fit(g1,"R");
+      // trace->Fit(g2,"R+");
+      // g1->GetParameters(&par[0]);
+      // g2->GetParameters(&par[3]);
+      // total->SetParameters(par);
+      // trace->Fit(total,"R+");
+      //delete g1, g2, total;
+      
+    }
+    double averageDeltaT = accumulate(timeDifference.begin(), timeDifference.end(), 0.0)/timeDifference.size();
+    if(  doubleELVESPixelCounter > 5){
+      hdeltaTMean->Fill(averageDeltaT);
+      hdeltaTMedian->Fill(CalcMHWScore(timeDifference));
+    }
+
+    fTMP.Write();
+    fTMP.Close();
+  }
+  
+  return eSuccess;
+}
+
+VModule::ResultFlag 
+DoubleELVESAnalysis::Finish() 
+{
+  TCanvas* cT = new TCanvas("cT","cT",800,600);
+  hdeltaTMedian->Draw();
+  cT->SaveAs("DoublePeakDeltaTMedian.png");
+  hdeltaTMean->Draw();
+  cT->SaveAs("DoublePeakDeltaTMean.png");
+  
+  return eSuccess;
+  
+}
+double DoubleELVESAnalysis::CalcMHWScore(vector<double> scores)
+{
+    double median;
+    size_t size = scores.size();
+    
+    sort(scores.begin(), scores.end());
+    
+    if (size  % 2 == 0)
+      {
+	median = (scores[size / 2 - 1] + scores[size / 2]) / 2;
+      }
+    else
+      {
+	median = scores[size / 2];
+      }
+    
+    return median;
+}
+  
+}
+
+
+// For special applications.
+void AugerOfflineUser()
+{
+}

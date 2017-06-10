@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<!-- Configuration of Module DoubleELVESAnalysis -->
+
+<DoubleELVESAnalysis xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                         xsi:noNamespaceSchemaLocation='@XMLSCHEMALOCATION@/DoubleELVESAnalysis.xsd'>
+<!-- Fill with your configuration.-->
+</DoubleELVESAnalysis>
