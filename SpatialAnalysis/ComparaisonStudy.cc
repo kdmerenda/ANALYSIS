@@ -102,7 +102,7 @@ ComparaisonStudy::Init()
   fEventCounter = 0;
   fSimEventCounter = 0;
 
-  TFile *fTMP = new TFile("traces.root","recreate");
+  TFile *fTMP = new TFile("traces/traces.root","recreate");
   fTMP->Close();
 
   outputPlots = new TFile("traces/FullTraces.root","recreate");
@@ -169,9 +169,9 @@ ComparaisonStudy::Run(evt::Event& event)
     const fdet::Eye& detEye = detFD.GetEye(eyeId);
 
 
-    cout << fEventCounter <<" " << fSimEventCounter<< " "  <<  eyePixelList->GetEyeNo() <<  " " << eyePixelList->GetNumPixels() << endl;
+    cout << fEventCounter <<" " << fSimEventCounter<< " " << eyeHeader->GetEventNo() <<  " "  <<  eyePixelList->GetEyeNo() <<  " " << eyePixelList->GetNumPixels() << endl;
     
-    TFile *fTMP = new TFile("traces.root","update");
+    TFile *fTMP = new TFile("traces/traces.root","update");
 
     for (unsigned int iPixel = 0; iPixel < eyePixelList->GetNumPixels(); ++iPixel) {
       
@@ -250,7 +250,8 @@ ComparaisonStudy::Run(evt::Event& event)
     const fdet::FDetector& detFD = det::Detector::GetInstance().GetFDetector();
     const fdet::Eye& detEye = detFD.GetEye(4);
     const fdet::Telescope& detTelGlobal = detEye.GetTelescope(4);
-    double longitudes[fNumFiles] = {-62,-62.5,-63,-63.5,-64,-64.5,-65,-65.5,-66,-66.5,-67};
+    //    double longitudes[fNumFiles] = {-62,-62.5,-63,-63.5,-64,-64.5,-65,-65.5,-66,-66.5,-67};
+    double longitudes[fNumFiles] = {-63.5,-64,-64.5,-65,-65.5,-66};
     
     double Integrals[fNumFiles];
     double IntegralsFromFit[fNumFiles];
@@ -440,6 +441,38 @@ ComparaisonStudy::Run(evt::Event& event)
     mgintegral->Draw("AP");
     cstats->SaveAs("outputs/ScatterIntegral.png");    
     
+    //overlay of same column as first pixel on same page. 
+    TCanvas * cfits = new TCanvas("cfits","cfits",1000,800);
+    gStyle->SetOptStat(0);
+    for(int k = 0; k < fNumFiles; k++){
+      const int arraysize = (int)TraceCounter[k];
+      TString  hCanvasName("Column ");hCanvasName+= FirstPixelColumn[k]; hCanvasName+=" : Longitude = ";hCanvasName+=longitudes[k];hCanvasName+=";Time Bins (100ns);ADC Counts";
+      TH1F hCanvas("hCanvas",hCanvasName,100,0,1000);
+      hCanvas.GetYaxis()->SetRangeUser(0,1000);
+      hCanvas.GetYaxis()->SetTitleOffset(1.4);
+      hCanvas.Draw();
+      TLegend lcstack(.15,.45,.35,.85);
+      lcstack.SetTextSize(0.03);
+      lcstack.SetTextFont(52);
+      //      gStyle->SetPalette(53);
+      int colorindex = 0;
+      for(int j = 0; j < arraysize; j++){
+	if(allFitsColumns[k][j] != FirstPixelColumn[k]) continue;
+	allFits[k][j]->SetLineColor(colorList[colorindex]);
+	//	allFits[k][j]->SetLineColor(gStyle->GetColorPalette(5*colorindex));
+	colorindex++;
+	allFits[k][j]->SetLineWidth(3);
+	allFits[k][j]->SetRange(200,1000);
+	allFits[k][j]->Draw("same");
+	TString lcstackName("Row ");lcstackName+=allFitsRows[k][j];
+	lcstack.AddEntry(allFits[k][j],lcstackName,"l");
+      }
+      TString cstackName("traces/traces_");cstackName+=longitudes[k];cstackName+=".png";
+      lcstack.Draw();
+      cfits->Update();
+      cfits->SaveAs(cstackName.Data());  
+    }
+
     //save all in mem
     outputPlots->Write();
     outputPlots->Close();

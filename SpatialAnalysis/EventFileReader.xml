@@ -19,18 +19,12 @@
 
     <InputFilenames> 
 
-<!--      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-61.5.eye3.root-->
-      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-62.0.eye3.root
-      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-62.5.eye3.root
-      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-63.0.eye3.root
-      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-63.5.eye3.root
-      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-64.0.eye3.root
-      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-64.5.eye3.root
-      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-65.0.eye3.root
-      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-65.5.eye3.root
-      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-66.0.eye3.root
-      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-66.5.eye3.root
-      /home/kswiss/Workspace/workoffline/SpatialAnalysis/saved/170605/eye3/FdSimOut.taur_5e-06_tauf_5e-05.-67.0.eye3.root
+      /home/kswiss/Workspace/workoffline/analysis/SpatialAnalysis/saved/170611/FdSimOut.-63.5.eye3.root
+      /home/kswiss/Workspace/workoffline/analysis/SpatialAnalysis/saved/170611/FdSimOut.-64.0.eye3.root
+      /home/kswiss/Workspace/workoffline/analysis/SpatialAnalysis/saved/170611/FdSimOut.-64.5.eye3.root
+      /home/kswiss/Workspace/workoffline/analysis/SpatialAnalysis/saved/170611/FdSimOut.-65.0.eye3.root
+      /home/kswiss/Workspace/workoffline/analysis/SpatialAnalysis/saved/170611/FdSimOut.-65.5.eye3.root
+      /home/kswiss/Workspace/workoffline/analysis/SpatialAnalysis/saved/170611/FdSimOut.-66.0.eye3.root
 
     </InputFilenames>
 

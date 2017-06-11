@@ -40,7 +40,7 @@ namespace ComparaisonStudyNS {
     const static int fNTels = 6;
     const static int fNRows = 22;
     const static int fNColumns = 20;
-    const static int fNumFiles = 11;
+    const static int fNumFiles = 6;
     TH1F* fhRawPixel[fNumFiles][fNTels][fNPixels];//added a dimension for sim vs data
     TH2F* hPixelRow[fNumFiles][fNRows];
     std::vector<std::string> eventChecker;
