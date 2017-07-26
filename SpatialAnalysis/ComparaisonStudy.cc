@@ -101,7 +101,11 @@ ComparaisonStudy::Init()
   //here we want to start by comparing only the first page of the traces. later we will do a full comparaison when the simulation will be doing followers properly.   
   fEventCounter = 0;
   fSimEventCounter = 0;
-
+  fNBinTrace = 300; //num bins in full trace
+  fMaxBinTrace = 2999; //max num of bins in full trace
+  fMinBinTrace = 0;
+  fNBinPage = int(1000./((fMaxBinTrace-fMinBinTrace)/fNBinTrace)); //num bin per page
+  int BinSize = int(((fMaxBinTrace-fMinBinTrace)/fNBinTrace));
   TFile *fTMP = new TFile("traces/traces.root","recreate");
   fTMP->Close();
 
@@ -109,12 +113,12 @@ ComparaisonStudy::Init()
 
   for(int i = 0; i < fNRows; i++){  
     //same title for both data and simulation
-    TString hPixelRowTitle("Row ");hPixelRowTitle+= (i+1);hPixelRowTitle+= ";Time Bin (100 ns);Column Number;ADC Counts / 2 Time Bins";
+    TString hPixelRowTitle("Row ");hPixelRowTitle+= (i+1);hPixelRowTitle+= ";Time Bin (100 ns);Column Number;ADC Counts / ";hPixelRowTitle+= BinSize; " (100 ns) Time Bins";
     
     for(int j=0; j < fNumFiles; j++){
       TString hPixelRowNameSim("hSimPixelRow");hPixelRowNameSim+= (i+1);
       hPixelRowNameSim+="_";hPixelRowNameSim+=j;
-      hPixelRow[j][i] = new TH2F(hPixelRowNameSim,hPixelRowTitle,150,0,2999,fNColumns,0,fNColumns);
+      hPixelRow[j][i] = new TH2F(hPixelRowNameSim,hPixelRowTitle,fNBinTrace,fMinBinTrace,fMaxBinTrace,fNColumns,0,fNColumns);
     }
   }
 
@@ -129,7 +133,7 @@ ComparaisonStudy::Init()
       for(int k=0; k < fNumFiles; k++){      
 	TString hnameSim("hSim");hnameSim+=k;hnameSim+="_tel";
 	hnameSim+=i+1;hnameSim+="_r";hnameSim+=detTelGlobal.GetPixel(j+1).GetRow();hnameSim+="_c";hnameSim+=detTelGlobal.GetPixel(j+1).GetColumn();
-	fhRawPixel[k][i][j] = new TH1F(hnameSim,hnameSim,150,0,2999);
+	fhRawPixel[k][i][j] = new TH1F(hnameSim,hnameSim,fNBinTrace,fMinBinTrace,fMaxBinTrace);
       }
 
     }
@@ -217,14 +221,15 @@ ComparaisonStudy::Run(evt::Event& event)
       hName+=fEventCounter;
       hName+="_m";hName+=mirrorId;hName+="_r";hName+=detTel.GetPixel(pixelId).GetRow();hName+="_c";hName+=detTel.GetPixel(pixelId).GetColumn();
 
-      TH1F* trace = new TH1F(hName,hName,50,startBin,endBin);
+      
+      TH1F* trace = new TH1F(hName,hName,fNBinPage,startBin,endBin);
       
       for (unsigned int pos = startBin; pos <= endBin; ++pos) {
 	charge = FADCDataWordGetData(&fadcword[pos]);
  	if (pixelId <= 440 && abs(baseline-baselinetail) > 10 && baseline >baselinetail){
-	  trace->SetBinContent(int(pos/20.),charge-baselinetail);	  
+	  trace->SetBinContent(int(pos/((fMaxBinTrace-fMinBinTrace)/fNBinTrace)),charge-baselinetail);	  
 	}else{
-	  trace->SetBinContent(int(pos/20.),charge-baseline);	  
+	  trace->SetBinContent(int(pos/((fMaxBinTrace-fMinBinTrace)/fNBinTrace)),charge-baseline);	  
 	}
       }//trace loop
 
@@ -251,7 +256,7 @@ ComparaisonStudy::Run(evt::Event& event)
     const fdet::Eye& detEye = detFD.GetEye(4);
     const fdet::Telescope& detTelGlobal = detEye.GetTelescope(4);
     //    double longitudes[fNumFiles] = {-62,-62.5,-63,-63.5,-64,-64.5,-65,-65.5,-66,-66.5,-67};
-    double longitudes[fNumFiles] = {-63.5,-64,-64.5,-65,-65.5,-66};
+    double longitudes[fNumFiles] = {-65,-65.5,-66};
     
     double Integrals[fNumFiles];
     double IntegralsFromFit[fNumFiles];
@@ -268,6 +273,8 @@ ComparaisonStudy::Run(evt::Event& event)
     vector<TF1*> allFits[fNumFiles];//this will save the fits done below, readjust for nTELS
     vector<double> allFitsRows[fNumFiles];//this will save the fits done below, readjust for nTELS
     vector<double> allFitsColumns[fNumFiles];//this will save the fits done below, readjust for nTELS
+    int skewed = 0;
+
     for(int k = 0; k < fNumFiles; k++){
       double MINTIME = 99999.;
       double MAXAMPLITUDE = 0.;
@@ -291,28 +298,33 @@ ComparaisonStudy::Run(evt::Event& event)
 	  
 	  //need a way better fit...
 	  TString FitName("g1");FitName+=i;FitName+=j;FitName+=k;
-	  TF1* g1 = new TF1(FitName,"gaus");
-	  g1->SetRange(0,3000);
-	  //	  TF1 g1("g1","gaus(0)+gaus(3)");
-	  //	  g1.SetParameters(500,1000,200,100,1200,200);//initial guess
-	  g1->SetParameters(fhRawPixel[k][i][j]->GetMaximum(),fhRawPixel[k][i][j]->GetMaximumBin(),fhRawPixel[k][i][j]->GetStdDev());//initial guess
+	  TF1* g1;
+
+	  if(!skewed) g1 = new TF1(FitName,"gaus",200,3000);
+	  if(skewed)  g1 = new TF1(FitName,asymGaussian,200,3000,4);
+
+	  if(!skewed) g1->SetParameters(fhRawPixel[k][i][j]->GetMaximum(),fhRawPixel[k][i][j]->GetMaximumBin(),fhRawPixel[k][i][j]->GetStdDev());//initial guess
+	  if(skewed) g1->SetParameters(fhRawPixel[k][i][j]->GetMaximum(),fhRawPixel[k][i][j]->GetMaximumBin(),fhRawPixel[k][i][j]->GetStdDev(),fhRawPixel[k][i][j]->GetStdDev());//initial guess
+	  
 	  fhRawPixel[k][i][j]->Fit(g1,"RQ");
 
 	  //clean up the fits
-	  if(
+	  if(!skewed && (
 	     g1->GetParameter(1) < 280                      // above trigger bin
-	       || g1->GetParameter(1) < 2*g1->GetParameter(2) // have a peak
-	       || g1->GetParameter(0) < 20                     // positive peak above bg noise
-	       || g1->GetParameter(0) <  g1->GetParError(0)
-	       || g1->GetParameter(1) <  g1->GetParError(1)
-	       || g1->GetParameter(2) <  g1->GetParError(2)
-	       || g1->Integral(0,3000) < 0
-	       || g1->GetParameter(0) > 8000
-	       || g1->GetChisquare()/g1->GetNDF() > 40 
-	     )continue;
+	     || g1->GetParameter(1) < 2*g1->GetParameter(2) // have a peak
+	     || g1->GetParameter(0) < 20                     // positive peak above bg noise
+	     || g1->GetParameter(0) <  g1->GetParError(0)
+	     || g1->GetParameter(1) <  g1->GetParError(1)
+	     || g1->GetParameter(2) <  g1->GetParError(2)
+	     || g1->Integral(0,3000) < 0
+	     || g1->GetParameter(0) > 8000
+	     || g1->GetChisquare()/g1->GetNDF() > 40)
+ 	     )continue;
 
+	  //ALERT: the 2*sigma stuff should be the amplitude not the mean..	  
+	  double integralTMPHIST = fhRawPixel[k][i][j]->Integral();
 	  //save some stuff of interest
-	  Integrals[k]+=fhRawPixel[k][i][j]->Integral();
+	  Integrals[k]+=integralTMPHIST;
 	  TraceCounter[k]++;
 	  
 	  //find first pixel 
@@ -332,13 +344,13 @@ ComparaisonStudy::Run(evt::Event& event)
 	    InteBrightPixel[k] = j+1;
 	  }
 	  IntegralsFromFit[k]+=integralTMPFIT;
-	  
-	  //save for later (maybe plots)
+
 	  allFits[k].push_back(g1);
 	  allFitsRows[k].push_back(detTelGlobal.GetPixel(j+1).GetRow());
 	  allFitsColumns[k].push_back(detTelGlobal.GetPixel(j+1).GetColumn());
-	}
+ 	}
       }
+      if(!int(FirstPixel[k])) continue;//skip if no fits were done.
       
       PeakBrightPixelValue[k] = MAXAMPLITUDE;
       InteBrightPixelValue[k] = MAXINTEGRAL;
@@ -447,8 +459,8 @@ ComparaisonStudy::Run(evt::Event& event)
     for(int k = 0; k < fNumFiles; k++){
       const int arraysize = (int)TraceCounter[k];
       TString  hCanvasName("Column ");hCanvasName+= FirstPixelColumn[k]; hCanvasName+=" : Longitude = ";hCanvasName+=longitudes[k];hCanvasName+=";Time Bins (100ns);ADC Counts";
-      TH1F hCanvas("hCanvas",hCanvasName,100,0,1000);
-      hCanvas.GetYaxis()->SetRangeUser(0,1000);
+      TH1F hCanvas("hCanvas",hCanvasName,100,0,2000);
+            hCanvas.GetYaxis()->SetRangeUser(0,2000);
       hCanvas.GetYaxis()->SetTitleOffset(1.4);
       hCanvas.Draw();
       TLegend lcstack(.15,.45,.35,.85);
@@ -462,7 +474,7 @@ ComparaisonStudy::Run(evt::Event& event)
 	//	allFits[k][j]->SetLineColor(gStyle->GetColorPalette(5*colorindex));
 	colorindex++;
 	allFits[k][j]->SetLineWidth(3);
-	allFits[k][j]->SetRange(200,1000);
+	allFits[k][j]->SetRange(200,2000);
 	allFits[k][j]->Draw("same");
 	TString lcstackName("Row ");lcstackName+=allFitsRows[k][j];
 	lcstack.AddEntry(allFits[k][j],lcstackName,"l");
@@ -499,7 +511,7 @@ ComparaisonStudy::GlueTrace(int iTagtmp, TH1F* theTrace, int telIdtmp, int pixel
     
     //if (fEventCounter == 1 && iBin > theTrace->GetNbinsX() - 10 ) continue;
     //    if( BinContent < PreviousBinContent - 1000) continue;
-    fhRawPixel[iTagtmp][telIdtmp-1][pixelIdtmp-1]->SetBinContent(iBin+(fEventCounter-1)*50,BinContent);
+    fhRawPixel[iTagtmp][telIdtmp-1][pixelIdtmp-1]->SetBinContent(iBin+int((fEventCounter-1)*1000./((fMaxBinTrace-fMinBinTrace)/fNBinTrace)),BinContent);
     PreviousBinContent = BinContent;
     
     
@@ -507,6 +519,19 @@ ComparaisonStudy::GlueTrace(int iTagtmp, TH1F* theTrace, int telIdtmp, int pixel
   return eSuccess;
 }
 
+Double_t ComparaisonStudy::asymGaussian(Double_t *x, Double_t *par)
+{
+    Double_t y=0.,xr=0.;
+    if (x[0]<=par[1]) {xr = (x[0]-par[1])/par[2]; y = par[0]*exp(-0.5*xr*xr);}
+    if (x[0]>par[1]) {xr = (x[0]-par[1])/(par[2]*par[3]); y = par[0]*exp(-0.5*xr*xr);}
+    return y;
+}
+Double_t ComparaisonStudy::skewedGaussian(Double_t *x, Double_t *par)
+{
+  Double_t xx = x[0];
+  Double_t xr = (xx-par[1])/par[2];
+  return (par[0]*exp(-0.5*xr*xr)*(1+TMath::Erf(par[3]*(xx-par[1])/(TMath::Sqrt(2)*par[2]))));
+}
 
 
 

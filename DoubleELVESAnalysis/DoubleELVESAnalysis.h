@@ -28,15 +28,29 @@ namespace DoubleELVESAnalysis {
     VModule::ResultFlag Init();
     VModule::ResultFlag Run(evt::Event& e);
     VModule::ResultFlag Finish();
+    VModule::ResultFlag GlueTrace( int,TH1F*, int, int);
     double CalcMHWScore(std::vector<double>);
 
   private:
     // Declare down here your data following this conventions:
     // fFieldName  : members.
     // fgFieldName : static data members.
-    int fEventCounter;
+    
+    const static int fNPixels = 440;
+    const static int fNTels = 6;
+    const static int fNRows = 22;
+    const static int fNColumns = 20;
+    TH1F* fhRawPixel[fNTels][fNPixels];//added a dimension for sim vs data
+
     TH1F* hdeltaTMedian;
     TH1F* hdeltaTMean;
+    TH1F* hdeltaTMeanCenter;
+    int fNBinTrace;
+    int fMaxBinTrace;
+    Int_t fNBinPage;
+    int fMinBinTrace;
+    int fEventCounter;
+    int fDataEventCounter;
 
 
     // Declare down here your private functions like this:

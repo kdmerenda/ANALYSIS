@@ -50,7 +50,7 @@ XMLSCHEMALOCATION = $(shell $(AUGEROFFLINECONFIG) --schema-location)
 all: $(EXE) $(USER_XMLS)
 
 $(EXE): $(OBJS)
-	$(CXX) -o $@ $^ $(MAIN) $(CXXFLAGS) $(LDFLAGS)
+	$(CXX) -o $@ $^ $(MAIN) $(CXXFLAGS) $(LDFLAGS) -lSpectrum
 
 %: %.in
 	@echo -n "Generating $@ file..." 

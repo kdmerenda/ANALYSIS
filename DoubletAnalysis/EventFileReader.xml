@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<!-- Configuration of Module EventFileReader -->
+
+<EventFileReader
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation='/home/kswiss/Workspace/offline/install/share/auger-offline/config/EventFileReader.xsd'>
+
+  <ReportFilenames/>
+
+  <!-- file types: Offline
+                   FDAS
+                   CDAS
+                   CORSIKA
+                   AIRES   
+                   IoAuger  -->
+
+  <FDAS>
+
+    <InputFilenames> 
+
+      /home/kswiss/Workspace/workoffline/analysis/SpatialAnalysis/saved/170615/tauf100/FdSimOut.tauf100us.-65.0.eye3.root
+      /home/kswiss/Workspace/workoffline/analysis/SpatialAnalysis/saved/170615/tauf100/FdSimOut.tauf100us.-65.5.eye3.root
+      /home/kswiss/Workspace/workoffline/analysis/SpatialAnalysis/saved/170615/tauf100/FdSimOut.tauf100us.-66.0.eye3.root
+
+    </InputFilenames>
+
+  </FDAS>
+
+</EventFileReader>

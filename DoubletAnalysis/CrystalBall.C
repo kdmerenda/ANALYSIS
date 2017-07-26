@@ -1,0 +1,128 @@
+// example of CrystalBall Function and its distribution (pdf and cdf)
+
+void CrystalBall()  {
+
+  myfunc();
+
+}
+
+void myfunc()
+{
+  TF1 *f1 = new TF1("myfunc",myCB,-50,50,4);
+  f1->SetParNames("alpha","n","sigma","mean");
+  f1->SetTitle("Possible Fits");
+  TF1 *f2 = new TF1("myfunc2","gaus",-50,50);
+  TF1 *f3 = new TF1("myfunc3",asymGaussian,-50,50,4);
+  //  TF1 *f4 = new TF1("myfunc4",inverseGaussian,-50,50,5);
+  TF1 *f5 = new TF1("myfunc5",skewedGaussian,-50,50,4);
+  TF1 *f6 = new TF1("myfunc6","gaus(0)+expo(3)-[6]",-50,50);
+  //  TF1 *f7 = new TF1("myfunc7","gamma",-50,50);
+  TF1 *f8 = new TF1("myfunc8",expGaussian,-50,50,4);
+  
+  f1->SetParameters(1,40,10,0);
+  f2->SetParameters(f1->GetMaximum(),0,10);
+  f3->SetParameters(f1->GetMaximum(),0,10,2);
+  //  f4->SetParameters(0,2,1,1,f1->GetMaximum());
+  f5->SetParameters(f1->GetMaximum(),0,10,0.5);
+  f6->SetParameters(f1->GetMaximum(),0,10,+20,-0.5,f1->GetMaximum()*100,-0.1);
+  f8->SetParameters(f1->GetMaximum()*20,20,0,10);
+
+  f2->SetLineColor(kBlue);
+  f3->SetLineColor(kGreen);
+  //  f4->SetLineColor(kViolet);
+  f6->SetLineColor(kViolet);
+  f5->SetLineColor(kOrange);
+  f8->SetLineColor(kBlack);
+
+  TCanvas* c1 = new TCanvas("c1","c1",1000,800);
+  TLegend* lll = new TLegend(0.15,0.55,0.4,0.85);
+  lll->AddEntry(f1,"Crystal Ball (par[3])","l");
+  lll->AddEntry(f2,"Gaussian (par[2])","l");
+  lll->AddEntry(f3,"Asym. Gaus. (par[3])","l");
+  lll->AddEntry(f5,"Skew. Gaus. (par[3])","l");
+  f1->Draw();
+  f2->Draw("same");
+  f3->Draw("same");
+  // f4->Draw("same");
+  f5->Draw("same");
+  f6->Draw("same");
+  f8->Draw("same");
+  lll->Draw();
+  c1->SaveAs("traces/Fits.png");
+}
+void myfit()
+{
+  TH1F *h1=new TH1F("h1","test",100,0,10);
+  h1->FillRandom("myfunc",20000);
+  TF1 *f1 = (TF1 *)gROOT->GetFunction("myfunc");
+  f1->SetParameters(2,2,1,1);
+  h1->Fit("myfunc");
+}
+Double_t myCB(Double_t *x, Double_t *par){
+  Float_t xx =x[0];
+  double alpha = par[0];
+  double n = par[1];
+  double sigma = par[2];
+  double mean = par[3];
+  if (sigma < 0.)     return 0.;
+  if ( n <= 1) return std::numeric_limits<double>::quiet_NaN();  // pdf is not normalized for n <=1
+  double abs_alpha = std::abs(alpha);
+  double C = n/abs_alpha * 1./(n-1.) * std::exp(-alpha*alpha/2.);
+  double D = std::sqrt(TMath::Pi()/2.)*(1.+ROOT::Math::erf(abs_alpha/std::sqrt(2.)));
+  double N = 1./(sigma*(C+D));
+  double z = (mean-xx)/sigma;
+  if (alpha < 0) z = -z;
+  double abs_alpha = std::abs(alpha);
+  Double_t CB;
+  if (z  > - abs_alpha)
+    CB = N * std::exp(- 0.5 * z * z);
+  else {
+    double nDivAlpha = n/abs_alpha;
+    double AA =  std::exp(-0.5*abs_alpha*abs_alpha);
+    double B = nDivAlpha -abs_alpha;
+    double arg = nDivAlpha/(B-z);
+    CB =  N * AA * std::pow(arg,n);
+  }
+  return CB;
+}
+
+Double_t asymGaussian(Double_t *x, Double_t *par)
+{
+    Double_t y=0.,xr=0.;
+    if (x[0]<=par[1]) {xr = (x[0]-par[1])/par[2]; y = par[0]*exp(-0.5*xr*xr);}
+    if (x[0]>par[1]) {xr = (x[0]-par[1])/(par[2]*par[3]); y = par[0]*exp(-0.5*xr*xr);}
+    return y;
+}
+Double_t inverseGaussian(Double_t *x, Double_t *par)
+{
+  Double_t xx = x[0];
+  if(xx < 0) return 0;
+  //  return sqrt(par[0]/(2*TMath::Pi()*(xx**3)))*exp((-par[0]*(xx-par[1])**2)/(2*(par[1]**2)*xx));
+  Double_t mtmp = par[0];
+  Double_t atmp = par[1];
+  Double_t btmp = par[2];
+  Double_t ptmp = par[3]; //for root only accept integer modified bessel function of second kind.
+  Double_t amptmp = par[4];
+  Double_t amp = pow((atmp/btmp),(ptmp/2));
+  amp = amp / (2 * TMath::BesselK(Int_t(ptmp),TMath::Sqrt(atmp*btmp)));
+  Double_t IG = amptmp * amp * pow((xx-mtmp),(ptmp-1)) * exp(-0.5*(atmp*(xx-mtmp) + btmp/(xx-mtmp)));
+  return IG;
+  
+}
+Double_t skewedGaussian(Double_t *x, Double_t *par)
+{
+  Double_t xx = x[0];
+  return (par[0]*exp(-0.5*((xx-par[1])/par[2])**2))*(1+TMath::Erf(par[3]*(xx-par[1])/(TMath::Sqrt(2)*par[2])));
+}
+
+Double_t expGaussian(Double_t *x, Double_t *par)
+{
+  Double_t x_alpha = x[0];
+  Double_t n = par[0];
+  Double_t to = par[1];
+  Double_t xbar = par[2];
+  Double_t s = par[3];
+  
+  return n/to*exp((xbar-x_alpha)/to+s**2/(2*to**2))*TMath::Erfc(1/TMath::Sqrt(2)*((xbar-x_alpha)/s+s/to));
+  
+}

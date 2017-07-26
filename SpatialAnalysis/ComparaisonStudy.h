@@ -32,6 +32,8 @@ namespace ComparaisonStudyNS {
     VModule::ResultFlag Run(evt::Event& e);
     VModule::ResultFlag Finish();
     VModule::ResultFlag GlueTrace( int,TH1F*, int, int);
+    static Double_t asymGaussian(Double_t *, Double_t *);
+    static Double_t skewedGaussian(Double_t *, Double_t *);
   private:
     // Declare down here your data following this conventions:
     // fFieldName  : members.
@@ -40,10 +42,14 @@ namespace ComparaisonStudyNS {
     const static int fNTels = 6;
     const static int fNRows = 22;
     const static int fNColumns = 20;
-    const static int fNumFiles = 6;
+    const static int fNumFiles = 3;
     TH1F* fhRawPixel[fNumFiles][fNTels][fNPixels];//added a dimension for sim vs data
     TH2F* hPixelRow[fNumFiles][fNRows];
     std::vector<std::string> eventChecker;
+    int fNBinTrace;
+    int fMaxBinTrace;
+    Int_t fNBinPage;
+    int fMinBinTrace;
     int fEventCounter;
     int fDataEventCounter;
     int fSimEventCounter;
