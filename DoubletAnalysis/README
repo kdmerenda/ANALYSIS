@@ -1,7 +1,0 @@
-Configuration for FD reconstruction of simulated events.  While the reconstruction configuration for real 
-events uses the databases for FD calibration constants and Atmospheric conditions, this configuration 
-uses fixed calibration constants for each pixel and uses parametric models for description of the atmosphere.
-No databases are accessed when using this configuration.
-
-Please consult the doxygen-generated documentation for details on how to inspect the configuration files
-used for this application.

@@ -19,6 +19,8 @@
 
     <InputFilenames>
     /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_006295_2017-03-01.01-31.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e4_005767_2015-04-16.06-36.root
+    /media/kswiss/ExtraDrive1/ELVESRawData/elves_e1_005434_2015-03-21.00-11.root
     </InputFilenames>
 
   </FDAS>

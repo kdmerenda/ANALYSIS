@@ -51,6 +51,7 @@
 #include <TCutG.h>
 #include <TH2D.h>
 #include <THStack.h>
+#include <TPaletteAxis.h>
 #include <TLegend.h>
 #include <TStyle.h>
 #include <TLatex.h>
@@ -96,26 +97,40 @@ VModule::ResultFlag
 DoubleELVESAnalysis::Init()
 {
   INFO("=====================>>>>>>>>>>>>>>>> Init!");
-  hdeltaTMedian = new TH1F("deltaTMedian","Median Difference; time bin (100ns); counts", 50, 200, 700);
-  hdeltaTMean = new TH1F("deltaTMean","Mean Time Difference; time bin (100ns); counts", 50, 200, 700);
-  hdeltaTMeanCenter = new TH1F("deltaTMeanCenter","Mean Time Difference for Center Column; time bin (100ns); counts", 50, 00, 700);
+  hdeltaTMedian = new TH1F("deltaTMedian","Median Difference; time bin (100ns); counts", 100, 200, 2000);
+  hdeltaTMean = new TH1F("deltaTMean","Mean Time Difference; time bin (100ns); counts", 100, 200, 2000);
+  hdeltaTMeanCenter = new TH1F("deltaTMeanCenter","Mean Time Difference for Center Column; time bin (100ns); counts", 100, 200, 2000);
 
+  fBinning = 2; //in us
+  fNPages = 10; //make it longer than necessary
+  
   fEventCounter = 0;
-  fNBinTrace = 300; //num bins in full trace
-  fMaxBinTrace = 2999; //max num of bins in full trace
-  fMinBinTrace = 0;
-  fNBinPage = int(1000./((fMaxBinTrace-fMinBinTrace)/fNBinTrace)); //num bin per page
+  fEventTracker = 0;
+  fDataEventCounter = 0;
+  fRebin = 10*fBinning;
+  fNBinTrace = 1000./(fRebin)*fNPages; //num bins in full trace --> 10th of detector
+  fMaxBinTrace = 1000*fNPages; //upper bin value in full trace
+  fMinBinTrace = 1;//lower bin value in full trace
+  fNBinPage = 1000./(fRebin) ; //num bin per page
+  cout << fRebin << " " << fNBinTrace << " " << fNBinPage << " " << fMinBinTrace << " " << fMaxBinTrace << endl;
+
+  
   int BinSize = int(((fMaxBinTrace-fMinBinTrace)/fNBinTrace));
   const TimeStamp times = UTCDateTime(2017,05,19,0,0).GetTimeStamp();
   Detector::GetInstance().Update(times);
   const fdet::FDetector& detFD = det::Detector::GetInstance().GetFDetector();
   const fdet::Eye& detEye = detFD.GetEye(4);
   const fdet::Telescope& detTelGlobal = detEye.GetTelescope(4);
+
+
+  outputPlots = new TFile("traces/FullTraces.root","recreate");
+  outputPlots->Close();
+  //create the template to hold the long traces of all events. 
   for(int i = 0; i < fNTels; i++){
     for(int j = 0; j < fNPixels; j++){
-	TString hnameSim("hSim");hnameSim+="_tel";
-	hnameSim+=i+1;hnameSim+="_r";hnameSim+=detTelGlobal.GetPixel(j+1).GetRow();hnameSim+="_c";hnameSim+=detTelGlobal.GetPixel(j+1).GetColumn();
-	fhRawPixel[i][j] = new TH1F(hnameSim,hnameSim,fNBinTrace,fMinBinTrace,fMaxBinTrace);
+      TString hname("m");hname+=i+1;hname+="_r";hname+=detTelGlobal.GetPixel(j+1).GetRow();hname+="_c";hname+=detTelGlobal.GetPixel(j+1).GetColumn();
+      hnameBase[i][j].Append(hname);
+      fhRawPixel[i][j] = new TH1F(hname,hname,fNBinTrace,fMinBinTrace,fMaxBinTrace);
     }
   }
   return eSuccess;
@@ -126,7 +141,7 @@ DoubleELVESAnalysis::Run(evt::Event& event)
 {
 
   AugerEvent& rawEvent = event.GetRawEvent();
-  INFO("New Raw Event!");
+
   
   for (AugerEvent::EyeIterator eyeIter = rawEvent.EyesBegin();
        eyeIter != rawEvent.EyesEnd(); ++eyeIter) {
@@ -142,14 +157,64 @@ DoubleELVESAnalysis::Run(evt::Event& event)
     fevt::Eye& eye = fdEvent.GetEye(eyeId);
 
 
-    cout << eyeEvent.GetEventHeader()->GetEventNo() << " " << eyePixelList->GetNumPixels() << " " <<  eyePixelList->GetEyeNo() << endl;
+    cout << eyeEvent.GetEventHeader()->GetEventNo() << " " << eyePixelList->GetNumPixels() << " " <<  eyePixelList->GetEyeNo() << " " << eyeHeader->GetTimeStamp()->GetSec() + 1e-9*eyeHeader->GetTimeStamp()->GetNanoSec()<<endl;
 
     //only look at first page.
-    for (int pageNum = 1; pageNum < 9; pageNum++){
-      if ( eyeEvent.GetEventHeader()->GetEventNo() == fEventCounter+pageNum) return eSuccess;
-    } fEventCounter = eyeEvent.GetEventHeader()->GetEventNo();
+    // for (int pageNum = 1; pageNum < 9; pageNum++){
+    //   if ( eyeEvent.GetEventHeader()->GetEventNo() == fEventCounter+pageNum) return eSuccess;
+    // } fEventCounter = eyeEvent.GetEventHeader()->GetEventNo();
 
-    
+    //look at first two pages only...170us is 25.5 km alt lightning, first need to keep track of things...
+    //tag first event in the series of 2-10 pages
+    // if(fEventCounter == 0 || (fEventCounter > 0 && eyeEvent.GetEventHeader()->GetEventNo() == fEventTracker+1)){
+    //   fEventCounter++;
+    // }
+    // if (fEventCounter > 0 && eyeEvent.GetEventHeader()->GetEventNo() != fEventTracker+1){
+    // }
+
+    // if (fEventCounter > 0 && eyeEvent.GetEventHeader()->GetEventNo() != fEventTracker+1){
+    //   fEventTracker = eyeEvent.GetEventHeader()->GetEventNo();
+    //   fEventCounter = 0;
+    // }
+
+    if( eyeEvent.GetEventHeader()->GetEventNo() == fEventTracker+1 ){
+      fEventCounter++;
+    }else{
+      fDataEventCounter++;
+      fEventCounter = 0;
+    }
+    cout << fEventCounter << " " << fEventTracker  <<  " " << eyeEvent.GetEventHeader()->GetEventNo()<< " " << fDataEventCounter << endl;
+    fEventTracker = eyeEvent.GetEventHeader()->GetEventNo();
+
+    if(fEventCounter == 0) {
+      // Save previous trace once we looped through one event. Make sure to put this once more in the finish to look at last event. 
+      if(fDataEventCounter > 1){
+	Analysis();
+      }
+
+      // SetUpFullPixelTrace
+      INFO("New Raw Event!\n");
+      for(int i = 0; i < fNTels; i++){
+	for(int j = 0; j < fNPixels; j++){
+	  TString hnameUpdate("hRun");
+	  hnameUpdate+=eyeEvent.GetEventHeader()->GetRunNo();
+	  hnameUpdate+="_Evt";
+	  hnameUpdate+=fEventTracker;
+	  hnameUpdate+="_";
+	  hnameUpdate+=hnameBase[i][j];
+	  fhRawPixel[i][j]->SetName(hnameUpdate);
+	  //clean histogram for reuse at each event. 
+	  for(int iBin = 1; iBin < fhRawPixel[i][j]->GetNbinsX()+1; iBin++){
+	    fhRawPixel[i][j]->SetBinContent(iBin,0.0);
+	  }
+	}
+      }
+    }
+    // if(fEventCounter > 1) {
+    //   INFO("Skipping Extra Pages.");
+    //   return eSuccess;
+    // }
+
     TString fName("/home/kswiss/Workspace/workoffline/analysis/DoubleELVESAnalysis/traces/");
     fName+="run";
     fName+=eyeEvent.GetEventHeader()->GetRunNo();
@@ -159,37 +224,19 @@ DoubleELVESAnalysis::Run(evt::Event& event)
     fName+=eyeId;
     fName+=".root";
     TFile fTMP(fName,"recreate");
-
     
-    int doubleELVESPixelCounter = 0;
-    vector<double> timeDifference;
-    vector<double> timeFirstPeak;
-    vector<int> columnFirstPeak;
-    struct TripleTriple {
-      double A;
-      double B;
-      int C;
-      int D;
-    };
+    int mirrorIdGlobal;//each eye event has all pixels lit in one list... multiple mirros as well... This global id is the first mirror lit.
     
-    struct by_A { 
-      bool operator()(TripleTriple const &a, TripleTriple const &b) { 
-	return a.A < b.A;
-      }
-    };
-    
-    vector<TripleTriple> FirstPeak;
-    int mirrorIdGlobal;
     for (unsigned int iPixel = 0; iPixel < eyePixelList->GetNumPixels(); ++iPixel) {
       
       FdUtil::Fd::FdPixelNumber pixelNumber = eyePixelList->GetPixel(iPixel);
       const unsigned int mirrorId = FdUtil::Fd::GetEyeMirrorNo(pixelNumber);
-      mirrorIdGlobal = mirrorId;
+      if(iPixel==0) mirrorIdGlobal = mirrorId;
       const unsigned int channelId = FdUtil::Fd::GetMirrorPixelNo(pixelNumber);
       //     const unsigned int pixelId = FdUtil::Fd::GetPixelNo(pixelNumber);
       
       const TFADCData* fadcData = eyeFADCData->GetFADCData(pixelNumber);
-
+      
       fevt::Telescope& tel = eye.GetTelescope(mirrorId);
       const fdet::FDetector& detFD = det::Detector::GetInstance().GetFDetector();
       const fdet::Eye& detEye = detFD.GetEye(eyeId);
@@ -198,13 +245,11 @@ DoubleELVESAnalysis::Run(evt::Event& event)
       
       const fdet::Channel& thisChannel = detTel.GetChannel(channelId);
       const unsigned int pixelId = thisChannel.GetPixelId();
-
-
+      
+      
       if (!fadcData || thisChannel.IsVirtual()) {
 	continue;
       }
-      //  cout << mirrorId << " " << channelId << " " << pixelId << endl;
-      
       
       const unsigned int startBin = fadcData->GetTraceStartBin();
       const unsigned int endBin = fadcData->GetTraceEndBin();
@@ -212,207 +257,248 @@ DoubleELVESAnalysis::Run(evt::Event& event)
       TFADCData::FADCDataWord fadcword = fadcData->GetFADCTrace();
       
       double baseline = 0.;
-      double baselineRMS = 0.;
+      double baselinetail=0.;
       double charge=0.;
-            
-             
-      // PEDESTAL CALCULATION : the first 280 bins
-      // for (unsigned int pos = startBin; pos <startBin+280; ++pos) baseline += int(FADCDataWordGetData(&fadcword[pos]))/280.;
       
-      // for (unsigned int pos = startBin; pos <startBin+280; ++pos) baselineRMS += pow(int(FADCDataWordGetData(&fadcword[pos])),2)/280.;
-
       for (unsigned int pos = startBin; pos < startBin+100; ++pos) baseline += int(FADCDataWordGetData(&fadcword[pos]))/100.;
+      for (unsigned int pos = endBin-100; pos < endBin; ++pos) baselinetail += int(FADCDataWordGetData(&fadcword[pos]))/100.;
       
-      for (unsigned int pos = startBin; pos <startBin+100; ++pos) baselineRMS += pow(int(FADCDataWordGetData(&fadcword[pos])),2)/100.;
-      
-      baselineRMS -= pow(baseline,2);
-      if (baselineRMS>0) baselineRMS=sqrt(baselineRMS);
-      else baselineRMS=0.;
-
       TString hName("h"); hName+=fEventCounter;hName+="_m";hName+=mirrorId;hName+="_r";hName+=detTel.GetPixel(pixelId).GetRow();hName+="_c";hName+=detTel.GetPixel(pixelId).GetColumn();
       TH1F* trace = new TH1F(hName,hName,1000,startBin,endBin);
-
+      
       for (unsigned int pos = startBin; pos <= endBin; ++pos) {
 	charge = FADCDataWordGetData(&fadcword[pos]);
-       	if (pixelId <= 440) trace->Fill(pos,charge-baseline);
+ 	if (pixelId <= 440 && abs(baseline-baselinetail) > 10 && baseline >baselinetail){
+	  //	  trace->SetBinContent(int(pos/((fMaxBinTrace-fMinBinTrace)/fNBinTrace)),charge-baselinetail);
+	  trace->SetBinContent(pos,charge-baselinetail);	  
+	  
+	}else{
+	  trace->SetBinContent(pos,charge-baseline);	  
+	}
       }
-
-      // if(trace->GetMaximum() < 50) {
-      //  	delete trace;
-      //  	continue;
-      // }
-
-      // TH1 *hm=0;
-      // TVirtualFFT::SetTransform(0);
-      // hm = trace->FFT(hm, "MAG");
-      // hm->SetNameTitle(hName.Append("_FFT"),"Magnitude of the 1st transform");
-      // hm->Draw();
+      trace->Rebin(fRebin);
       
-      // TF1 p1("p1","pol1",0,200);
-      // TF1 g1("g1","gaus",200,600);
-      // TF1 g2("g2","gaus",600,1000);
-      // // p1.SetLineColor(kBlack);
-      // g1.SetLineColor(kRed);
-      // g2.SetLineColor(kBlue);
-      // // trace->Fit(&p1,"R");
-      // trace->Fit(&g1,"RQ");
-      // trace->Fit(&g2,"RQ+");
-      // // g1.GetParameters(&par[0]);
-      // // g2.GetParameters(&par[3]);
-      
-      // //normalize      
-      // if( //Difference between the mean of the gaussian (dt)
-      // 	 TMath::Abs( g1.GetParameter(1) - g2.GetParameter(1)) < 150 ||
-      // 	 //Amplitude of the fit at the mean
-      // 	 g1.Eval(g1.GetParameter(1)) < 50 || g2.Eval(g2.GetParameter(1)) < 50 ||
-      // 	 //The difference in amplitudes at the mean
-      // 	 TMath::Abs(g1.GetParameter(0) - g2.GetParameter(0)) > 150 ||
-      // 	 //The quality of the fits
-      // 	 g2.GetChisquare()/g2.GetNDF() > 10 || g1.GetChisquare()/g1.GetNDF() > 10 ||
-      // 	 //The standard deviation of the fits (width of peaks)
-      // 	  g1.GetParameter(2) > 200 || g2.GetParameter(2) > 200 ||
-      // 	 //significance of the peak? nope need p-value
-      // 	 // g1.GetParameter(0) < 2*g1.GetParameter(2) || g2.GetParameter(0) < 2*g2.GetParameter(2) ||
-      // 	 //make sure the paramters are greater than their error.
-      // 	 g1.GetParameter(0) <  g1.GetParError(0)    || g1.GetParameter(1) <  g1.GetParError(1)|| g1.GetParameter(2) <  g1.GetParError(2) ||
-      // 	 g2.GetParameter(0) <  g2.GetParError(0)    || g2.GetParameter(1) <  g2.GetParError(1)|| g2.GetParameter(2) <  g2.GetParError(2) 
-      // 	  ){
-      // 	delete trace;
-      // 	continue;
-      // }
-      
-      // doubleELVESPixelCounter++;
-      // TripleTriple FirstPeakTmp;
-      // FirstPeakTmp.A = g1.GetParameter(1);
-      // FirstPeakTmp.C = TMath::Abs(g1.GetParameter(1) - g2.GetParameter(1));
-      // FirstPeakTmp.B = detTel.GetPixel(pixelId).GetColumn();
-      // timeFirstPeak.push_back(g1.GetParameter(1));
-      // columnFirstPeak.push_back(detTel.GetPixel(pixelId).GetColumn());
-      // timeDifference.push_back(TMath::Abs(g1.GetParameter(1) - g2.GetParameter(1)));
-      // FirstPeak.push_back(FirstPeakTmp);
-      //||
-      //	 p1.GetChisquare()/p1.GetNDF() > 2 )
-      // Double_t par[6];
-      // TF1 *g1    = new TF1("g1","gaus",200,600);
-      // TF1 *g2    = new TF1("g2","gaus",600,1000);
-      // TF1 *total = new TF1("total","gaus(0)+gaus(3)",200,1000);
-      // total->SetLineColor(2);
-      // trace->Fit(g1,"R");
-      // trace->Fit(g2,"R+");
-      // g1->GetParameters(&par[0]);
-      // g2->GetParameters(&par[3]);
-      // total->SetParameters(par);
-      // trace->Fit(total,"R+");
-      //delete g1, g2, total;
+      GlueTrace(fEventCounter,trace,mirrorId,pixelId);
+      //      delete trace;
+    }//pixel loop
+    fTMP.Write();
+    fTMP.Close();
+  }//eye loop 
 
-      Int_t nbins = 1000;
+  return eSuccess;
+  
+
+}
+
+  //this function is called when fEventCounter = 0, before the fHRawPixel are cleared
+VModule::ResultFlag
+DoubleELVESAnalysis::Analysis()
+{
+  //sample info to get col and row from pixelId
+  // const TimeStamp times = UTCDateTime(2017,05,19,0,0).GetTimeStamp();
+  //  Detector::GetInstance().Update(times);
+  const fdet::FDetector& detFD = det::Detector::GetInstance().GetFDetector();
+  const fdet::Eye& detEye = detFD.GetEye(4);
+  const fdet::Telescope& detTelGlobal = detEye.GetTelescope(4);
+
+  vector<double> timeDifference;
+  vector<double> timeFirstPeak;
+  vector<int> columnFirstPeak;
+  struct ELVESTraceData {
+    double t0;//time of First Peak
+    double dt;// time difference between the two peaks
+    int colnum;// column number
+    int rownum;//row number
+    int mirnum;//mirror num
+    double chi2; ///chi2
+  };
+  vector <ELVESTraceData> FirstPeak;
+  
+  struct by_t0 { 
+    bool operator()(ELVESTraceData const &a, ELVESTraceData const &b) { 
+      return a.t0 < b.t0;
+    }
+  };
+
+  int npages = 3;
+  int nbins = npages*fNBinPage;//look at three pages
+  
+  int doubleELVESPixelCounter = 0;
+  for(int i = 0; i < fNTels; i++){
+    for(int j = 0; j < fNPixels; j++){
+      int pixelId = j+1;
       TSpectrum *spectrum = new TSpectrum(100);
-      Float_t * source = new Float_t[nbins];
-      Float_t * dest   = new Float_t[nbins];
-      TH1F *d = new TH1F(hName.Append("d"),"",nbins,0,999);
-      for (int i = 0; i < nbins; i++) source[i]=trace->GetBinContent(i + 1);
-      spectrum->SetName(hName.Append("_spectrum"));
-      //      Int_t nfound = spectrum->Search(trace,50,"",0.10);
-      Int_t nfound = spectrum->SearchHighRes(source, dest, nbins, 50, 20, kTRUE, 2, kTRUE, 3);
-      printf("Found %d candidate peaks to fit\n",nfound);
-      TH1 *hb = spectrum->Background(trace,20,"same");
+      TSpectrum *spectrumbg = new TSpectrum(100);
+      Float_t *source = new Float_t[nbins];
+      Float_t *dest = new Float_t[nbins];
+      TString hName("");hName+=fhRawPixel[i][j]->GetName();
+      TString spectrumName(hName);
+      TString spectrumbgName(hName);
+      spectrum->SetName(spectrumName.Append("_spectrum"));
+      //      cout << spectrumName << endl;
+      spectrumbg->SetName(spectrumbgName.Append("_spectrumbg"));
+      TH1F *d = new TH1F(hName.Append("d"),"",nbins,fMinBinTrace,npages*1000);
+      TH1F *hbraw = new TH1F(hName.Append("braw"),"",nbins,fMinBinTrace,npages*1000);
+      for (int k = 0; k < nbins; k++) {
+	source[k]=fhRawPixel[i][j]->GetBinContent(k+1);
+	hbraw->SetBinContent(k+1,fhRawPixel[i][j]->GetBinContent(k+1));
+      }
+      Int_t nfound = spectrum->SearchHighRes(source, dest, nbins, 1.5, 30, kTRUE, 3, kTRUE, 3);
+      TH1 *hb = spectrum->Background(hbraw,2,"same");
       hb->SetName(hName.Append("_background"));
+      Int_t nfoundbg = spectrumbg->Search(hb,3,"",0.20);
+      //      cout << nfound << " " << nfoundbg << endl;
+
       Float_t *xpeaks = spectrum->GetPositionX();
       Double_t fPositionX[100];
       Double_t fPositionY[100];
-      for (int i = 0; i < nfound; i++) {
-	int a=xpeaks[i];
-	int bin = 1 + Int_t(a + 0.5);
-	fPositionX[i] = trace->GetBinCenter(bin);
-	fPositionY[i] = trace->GetBinContent(bin);
+      for (int k = 0; k < nfound; k++) {
+	int bin = 1 + Int_t(xpeaks[k] + 0.5);
+	fPositionX[k] = fhRawPixel[i][j]->GetBinCenter(bin);
+	fPositionY[k] = fhRawPixel[i][j]->GetBinContent(bin);
       }
-      TPolyMarker * pm = (TPolyMarker*)trace->GetListOfFunctions()->FindObject("TPolyMarker");
+      TPolyMarker * pm = (TPolyMarker*)fhRawPixel[i][j]->GetListOfFunctions()->FindObject("TPolyMarker");
       if (pm) {
-	trace->GetListOfFunctions()->Remove(pm);
+	fhRawPixel[i][j]->GetListOfFunctions()->Remove(pm);
 	delete pm;
       }
+
       pm = new TPolyMarker(nfound, fPositionX, fPositionY);
-      trace->GetListOfFunctions()->Add(pm);
+      fhRawPixel[i][j]->GetListOfFunctions()->Add(pm);
       pm->SetMarkerStyle(23);
       pm->SetMarkerColor(kRed);
       pm->SetMarkerSize(1.3);
-      for (int i = 0; i < nbins; i++) d->SetBinContent(i + 1,dest[i]);
+      for (int k = 1; k <= nbins; k++) d->SetBinContent(k,dest[k]);
       d->SetLineColor(kRed);
-
+  
       Double_t par[6];
-      if(nfound = 2  &&  fPositionY[0] > 20 &&  fPositionY[1] > 20){
-	cout <<"Time Difference: " << fPositionX[1]-fPositionX[0] << endl;
-	par[0]=fPositionY[0];par[1]=fPositionX[0];par[2]=100;
-	par[3]=fPositionY[1];par[4]=fPositionX[1];par[5]=100;
-	TF1 total("total","gaus(0)+gaus(3)",200,1000);
+      Double_t chi2tmp;
+      if(nfoundbg == 2   &&  fPositionY[0] > 20 &&  fPositionY[1] > 20 && TMath::Abs(fPositionX[1]-fPositionX[0]) < 2700){
+      // if(fhRawPixel[i][j]->GetMean()!=0){
+	//	cout << "Found "<< nfound<<" candidate peaks to fit\n" << endl;
+	//cout << "Found "<< nfoundbg<<" candidate bg peaks to fit\n" << endl;
+	//	cout <<"Time Difference: " << fPositionX[1]-fPositionX[0] << endl;
+	par[0]=fPositionY[0];par[1]=fPositionX[0];par[2]=50;
+	par[3]=fPositionY[1];par[4]=fPositionX[1];par[5]=50;
+	TF1 total("total","gaus(0)+gaus(3)",200,npages*1000);
 	total.SetParameters(par);
-	trace->Fit(&total,"RQ");
+	fhRawPixel[i][j]->Fit(&total,"RQ");
+	//	cout << total.GetChisquare()/total.GetNDF() << endl;
+	chi2tmp = total.GetChisquare()/total.GetNDF();
+	outputPlots = new TFile("traces/FullTraces.root","update");
+	fhRawPixel[i][j]->Write();
+	hb->Write();
+	outputPlots->Close();
       }else{
-	delete trace;
-	delete d;
-	delete hb;
+	// delete d;
+	// delete hb;
 	continue;         
       }
-
-
+      
       doubleELVESPixelCounter++;
-      TripleTriple FirstPeakTmp;
-      FirstPeakTmp.A = par[1];
-      FirstPeakTmp.B =TMath::Abs(par[4]-par[1]);
-      FirstPeakTmp.C = detTel.GetPixel(pixelId).GetColumn();
-      FirstPeakTmp.D = detTel.GetPixel(pixelId).GetRow();
+      //      cout << "============" << par[1] << " " << TMath::Abs(par[4]-par[1]) << " " << doubleELVESPixelCounter << endl;
+      ELVESTraceData FirstPeakTmp;
+      FirstPeakTmp.t0 = par[1];
+      FirstPeakTmp.dt =TMath::Abs(par[4]-par[1]);
+      FirstPeakTmp.colnum = detTelGlobal.GetPixel(pixelId).GetColumn();
+      FirstPeakTmp.rownum = detTelGlobal.GetPixel(pixelId).GetRow();
+      FirstPeakTmp.mirnum = i+1;
+      FirstPeakTmp.chi2 = chi2tmp;
       timeFirstPeak.push_back(fPositionX[0]);
-      columnFirstPeak.push_back(detTel.GetPixel(pixelId).GetColumn());
-      timeDifference.push_back(fPositionX[1]-fPositionX[0]);
+      columnFirstPeak.push_back(detTelGlobal.GetPixel(pixelId).GetColumn());
+      timeDifference.push_back(TMath::Abs(fPositionX[1]-fPositionX[0]));
       FirstPeak.push_back(FirstPeakTmp);
 
-
+      
     }//end pixel loop
-
-    sort(FirstPeak.begin(),FirstPeak.end(),by_A());
-    double averageDeltaT = accumulate(timeDifference.begin(), timeDifference.end(), 0.0)/timeDifference.size();
-    //A: mean g1
-    //C: Abs (mean g1 - mean g2)
-    //B: Pixel Num Column
-    double averageMinColT=0;
-    int averageCounter=0;
-    TString heatmapDeltaTName("heatmapDeltaT_m");heatmapDeltaTName+=mirrorIdGlobal;
-    TH2F heatmapDeltaT(heatmapDeltaTName,"heatmapDeltaT",20,1,20,22,1,22);
-    if (FirstPeak.size() != 0){
-      for(int i=0; i < FirstPeak.size(); i++){
-	cout << FirstPeak[i].A  << endl;
- 	cout << FirstPeak[i].B  << endl;
-	cout << FirstPeak[i].C  << endl;
-	cout << FirstPeak[i].D  << endl;
-	cout << averageDeltaT << endl << endl;
-	heatmapDeltaT.Fill(FirstPeak[i].C,FirstPeak[i].D,FirstPeak[i].B);
-	//calculate average based on center column
-	if(FirstPeak[i].C == FirstPeak[0].C){
-	  averageMinColT += FirstPeak[i].B;
-	  averageCounter++;
-	}
-      }
-      averageMinColT = averageMinColT / averageCounter;
-    }
-
-    
-    //making sure a full event is looked at. 
-    if(doubleELVESPixelCounter >= 5){
-      hdeltaTMeanCenter->Fill(averageMinColT);
-      hdeltaTMean->Fill(averageDeltaT);
-      hdeltaTMedian->Fill(CalcMHWScore(timeDifference));
-      fTMP.Write();
-      fTMP.Close();
-    }else{ fTMP.Close();   fTMP.Delete();}
-    
   }
+  //for reference
+  // struct ELVESTraceData {
+  //   double t0;//time of First Peak
+  //   double dt;// time difference between the two peaks
+  //   int colnum;// column number
+  //   int rownum;//row number
+  // };
+
   
-  return eSuccess;
+  //figure this out
+  //  int mirrorIdGlobal = 1;
+  sort(FirstPeak.begin(),FirstPeak.end(),by_t0());
+  double averageDeltaT = accumulate(timeDifference.begin(), timeDifference.end(), 0.0)/timeDifference.size();
+  double averageMinColT=0;
+  int averageCounter=0;
+
+  TH2F * heatmapDeltaT[6];
+  TH2F * heatmapChi2[6];
+  for(int i=0; i < 6; i++){
+    TString hNameheatmapDeltaT("");hNameheatmapDeltaT+=fhRawPixel[0][0]->GetName();
+    hNameheatmapDeltaT.Remove(hNameheatmapDeltaT.Length()-9,hNameheatmapDeltaT.Length());
+    hNameheatmapDeltaT+="_heatmapDeltaT_m";hNameheatmapDeltaT+=i+1;
+    heatmapDeltaT[i] = new TH2F(hNameheatmapDeltaT,"heatmapDeltaT",20,1,20,22,1,22);
+    TString hNameheatmapChi2("");hNameheatmapChi2+=fhRawPixel[0][0]->GetName();
+    hNameheatmapChi2.Remove(hNameheatmapChi2.Length()-9,hNameheatmapChi2.Length());
+    hNameheatmapChi2+="_heatmapChi2_m";hNameheatmapChi2+=i+1;
+    heatmapChi2[i] = new TH2F(hNameheatmapChi2,"heatmapChi2",20,1,20,22,1,22);
+  }
+  if (FirstPeak.size() != 0){
+    for(int i=0; i < FirstPeak.size(); i++){
+      heatmapDeltaT[FirstPeak[i].mirnum-1]->Fill(FirstPeak[i].colnum,FirstPeak[i].rownum,FirstPeak[i].dt);
+      heatmapChi2[FirstPeak[i].mirnum-1]->Fill(FirstPeak[i].colnum,FirstPeak[i].rownum,FirstPeak[i].chi2);
+      TPaletteAxis *palette = (TPaletteAxis*)heatmapDeltaT[FirstPeak[i].mirnum-1]->GetListOfFunctions()->FindObject("palette");
+      delete palette;
+      //calculate average based on center column
+      if(FirstPeak[i].colnum == FirstPeak[0].colnum){
+	averageMinColT += FirstPeak[i].dt;
+	averageCounter++;
+      }
+    }
+    averageMinColT = averageMinColT / averageCounter;
+  }
+  outputPlots = new TFile("traces/FullTraces.root","update");
+  for(int i=0; i < 6; i++){    
+    //    heatmapDeltaT[i]->GetZaxis()->SetRangeUser(averageDeltaT-50,averageDeltaT+50);
+    if(heatmapDeltaT[i]->GetMean()!=0) heatmapDeltaT[i]->Write();
+    if(heatmapChi2[i]->GetMean()!=0) heatmapChi2[i]->Write();
+  }
+  outputPlots->Close();
+  
+  cout <<endl<< averageMinColT << " " << averageDeltaT << " " << doubleELVESPixelCounter<< endl<<endl;
+  
+      //making sure a full-bodied elves is lookedc at and take care of stereo
+  if(doubleELVESPixelCounter >= 10){
+    // if(EventTimeList.size()>=1){
+    // 	for(int i = 0; i < EventTimeList.size(); i++){
+    // 	  // if(abs((eyeHeader->GetTimeStamp()-EventTimeList[i]).double()) < 1e-6){
+    // 	  //   cout << "ALERT" << endl;
+    // 	  // }
+    // 	}
+    //      }
+    // EventTimeList.push_back(eyeHeader->GetTimeStamp());
+    hdeltaTMeanCenter->Fill(averageMinColT);
+    hdeltaTMean->Fill(averageDeltaT);
+    hdeltaTMedian->Fill(CalcMHWScore(timeDifference));
+    //      fTMP.Write();
+    //      fTMP.Close();
+  }else{}// fTMP.Close();   fTMP.Delete();}
+  
+  
+  return eSuccess;  
 }
+
 
 VModule::ResultFlag 
 DoubleELVESAnalysis::Finish() 
 {
+  //analysis and save the last event
+  Analysis();
+  // outputPlots = new TFile("traces/FullTraces.root","update");
+  // for(int i = 0; i < fNTels; i++){
+  //   for(int j = 0; j < fNPixels; j++){
+  //     if(fhRawPixel[i][j]->GetMean()!=0) fhRawPixel[i][j]->Write();
+  //   }
+  // }
+  // outputPlots->Close();
+
   TCanvas* cT = new TCanvas("cT","cT",800,600);
   hdeltaTMedian->Draw();
   cT->SaveAs("DeltaTMedian.png");
@@ -421,6 +507,7 @@ DoubleELVESAnalysis::Finish()
   hdeltaTMeanCenter->Draw();
   cT->SaveAs("DeltaTMeanCenter.png");
   
+  outputPlots->Close();
   return eSuccess;
   
 }
@@ -429,17 +516,9 @@ DoubleELVESAnalysis::Finish()
 VModule::ResultFlag
 DoubleELVESAnalysis::GlueTrace(int iTagtmp, TH1F* theTrace, int telIdtmp, int pixelIdtmp) 
 {
-  double PreviousBinContent = 0;
-
-  for(int iBin = 1; iBin <= theTrace->GetNbinsX(); iBin++){
+  for(int iBin = 1; iBin < theTrace->GetNbinsX()+1; iBin++){
     double BinContent = theTrace->GetBinContent(iBin);
-    double normalizedBinContent;
-    
-    //if (fEventCounter == 1 && iBin > theTrace->GetNbinsX() - 10 ) continue;
-    //    if( BinContent < PreviousBinContent - 1000) continue;
-    fhRawPixel[telIdtmp-1][pixelIdtmp-1]->SetBinContent(iBin+int((fEventCounter-1)*1000./((fMaxBinTrace-fMinBinTrace)/fNBinTrace)),BinContent);
-    PreviousBinContent = BinContent;
-    
+    fhRawPixel[telIdtmp-1][pixelIdtmp-1]->SetBinContent(iBin+int((fEventCounter)*1000./((fMaxBinTrace-fMinBinTrace)/fNBinTrace)),BinContent);  
     
   }
   return eSuccess;

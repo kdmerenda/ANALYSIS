@@ -10,6 +10,9 @@
 #include <fwk/VModule.h>
 #include <boost/utility.hpp>
 #include "TH1F.h"
+#include "TFile.h"
+#include "TString.h"
+#include <TTimeStamp.hh>
 #include <vector>
 /*
  * Avoid using using namespace declarations in your headers,
@@ -28,6 +31,7 @@ namespace DoubleELVESAnalysis {
     VModule::ResultFlag Init();
     VModule::ResultFlag Run(evt::Event& e);
     VModule::ResultFlag Finish();
+    VModule::ResultFlag Analysis();
     VModule::ResultFlag GlueTrace( int,TH1F*, int, int);
     double CalcMHWScore(std::vector<double>);
 
@@ -40,18 +44,24 @@ namespace DoubleELVESAnalysis {
     const static int fNTels = 6;
     const static int fNRows = 22;
     const static int fNColumns = 20;
-    TH1F* fhRawPixel[fNTels][fNPixels];//added a dimension for sim vs data
-
+    TH1F* fhRawPixel[fNTels][fNPixels];
+    TString hnameBase[fNTels][fNPixels];
     TH1F* hdeltaTMedian;
     TH1F* hdeltaTMean;
     TH1F* hdeltaTMeanCenter;
+    int fBinning;
     int fNBinTrace;
     int fMaxBinTrace;
     Int_t fNBinPage;
     int fMinBinTrace;
     int fEventCounter;
+    int fEventTracker;
+    int fNPages;
+    int fRebin;
     int fDataEventCounter;
 
+    TFile* outputPlots;
+    vector<const FdRoot::TTimeStamp*> EventTimeList;
 
     // Declare down here your private functions like this:
 

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<!DOCTYPE bootstrap [
+  <!ENTITY standardFdIdealDetConfig SYSTEM '/home/kswiss/Workspace/offline/install/share/auger-offline/config/standardFdIdealDetConfig.xml'>
+  <!ENTITY standardFdRecModuleConfig SYSTEM '/home/kswiss/Workspace/offline/install/share/auger-offline/config/standardFdRecModuleConfig.xml'>
+  <!ENTITY standardSdIdealDetConfig SYSTEM '/home/kswiss/Workspace/offline/install/share/auger-offline/config/standardSdIdealDetConfig.xml'>
+]>
+
+<bootstrap xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation='/home/kswiss/Workspace/offline/install/share/auger-offline/config/bootstrap.xsd'
+           xmlns:xlink="http://www.auger.org/schema/types">
+
+  &standardFdIdealDetConfig;
+  &standardFdRecModuleConfig;
+
+  &standardSdIdealDetConfig;
+
+  <centralConfig>
+
+    <!-- Specify our FD sequence -->
+    <configLink
+      id         = "ModuleSequence"
+      type       = "XML"
+      xlink:href = "./ModuleSequence.xml"/>
+
+    <!-- Specify type and location of data files -->
+    <configLink
+      id         = "EventFileReader"
+      type       = "XML"
+      xlink:href = "./EventFileReader.xml"/>
+
+  </centralConfig>
+
+</bootstrap>
